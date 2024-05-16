@@ -1,6 +1,5 @@
-import 'package:flutter/cupertino.dart';
+import 'package:expense_tracker/models/expense.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 class NewExpense extends StatefulWidget {
   const NewExpense({super.key});
@@ -20,6 +19,22 @@ class _NewExpenseState extends State<NewExpense> {
     _titleController.dispose();
     _amountContoller.dispose();
     super.dispose();
+  }
+
+  DateTime? _selectedDate;
+  Category _selectedCategory = Category.leisure;
+
+  void _presentDatePicker() async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year - 1, now.month, now.day);
+    final pickedDate = await showDatePicker(
+      context: context,
+      firstDate: firstDate,
+      lastDate: now,
+    );
+    setState(() {
+      _selectedDate = pickedDate;
+    });
   }
 
   @override
@@ -53,9 +68,13 @@ class _NewExpenseState extends State<NewExpense> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const Text('Selected Date'),
+                    //the ! after _selectedDate is added because Flutter was mad that DateTime might be null
+                    //but since we are checking if it's null first, we use the ! to force it to accept it
+                    Text(_selectedDate == null
+                        ? 'No date selected'
+                        : formatter.format(_selectedDate!)),
                     IconButton(
-                      onPressed: () {},
+                      onPressed: _presentDatePicker,
                       icon: const Icon(Icons.calendar_month),
                     )
                   ],
@@ -63,8 +82,38 @@ class _NewExpenseState extends State<NewExpense> {
               ),
             ],
           ),
+          const SizedBox(height: 16),
           Row(
             children: [
+              //DropdownButtom items wants a list of dropdown items.
+              //Category.valeus is a list of enum values.
+              //so we have to map over it to change them into the correct type of item it wants.
+              //add .toList() because map returns an Iterable.
+              //"value" is what will be saved, "child" is what the user will see on FE.
+              DropdownButton(
+                  value: _selectedCategory,
+                  items: Category.values
+                      .map((category) => DropdownMenuItem(
+                          value: category,
+                          child: Text(
+                            category.name.toUpperCase(),
+                          )))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      _selectedCategory = value;
+                    });
+                  }),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
               ElevatedButton(
                 onPressed: () {
                   print(_titleController.text);
@@ -72,12 +121,6 @@ class _NewExpenseState extends State<NewExpense> {
                 },
                 child: const Text('Save Expense'),
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text('Cancel'),
-              )
             ],
           )
         ],
